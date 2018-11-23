@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Mi primer Canvas</title>
+    <style>
+    	* { padding: 0; margin: 0; }
+    	canvas { background: #eee; display: block; margin: 0 auto; }
+    </style>
+</head>
+<body>
+
+    <canvas id="myCanvas" width="1200" height="500"></canvas>
+
+    <script>
+
+        var canvas = document.getElementById("myCanvas");
+        var ctx = canvas.getContext("2d");
+
+        document.addEventListener("mousemove", mouseMoveHandler, false);
+        document.addEventListener("keydown", keyDownHandler, false);
+        document.addEventListener("keyup", keyUpHandler, false);
+
+        var ball = 10;
+
+        var x = 70;
+        var y = 150;
+
+        var dx = 2;
+        var dy = 2;
+
+        var paddleH = 10;
+        var paddleW = 100;
+        var paddleX = (canvas.width-paddleW)/2;
+
+        var rightPressed = false;
+        var leftPressed = false;
+
+        var brickRowCount = 5;
+        var brickColumnCount = 10;
+        var brickWidth = 75;
+        var brickHeight = 20;
+        var brickPadding = 10;
+        var brickOffsetTop = 80;
+        var brickOffsetLeft = 200;
+
+        var bricks = [];
+
+        var score = 0;
+
+        var lives = 3;
+
+        for(c=0; c<brickColumnCount; c++) {
+            bricks[c] = [];
+            for(r=0; r<brickRowCount; r++) {
+                bricks[c][r] = { x: 0, y: 0, status: 1 };
+                console.log(bricks[c][r]);
+            }
+        }
+
+        function mouseMoveHandler(e) {
+            var relativeX = e.clientX - canvas.offsetLeft;
+            if(relativeX > 0 && relativeX < canvas.width) {
+                paddleX = relativeX - paddleW/2;
+            }
+        }
+        
+
+
+        function keyDownHandler(e) {
+            if(e.keyCode == 39) {
+                rightPressed = true;
+            }
+            else if(e.keyCode == 37) {
+                leftPressed = true;
+            }
+        }
+
+        function keyUpHandler(e) {
+            if(e.keyCode == 39) {
+                rightPressed = false;
+            }
+            else if(e.keyCode == 37) {
+                leftPressed = false;
+            }
+        }
+
+        function collisionDetection() {
+            for(c=0; c<brickColumnCount; c++) {
+                for(r=0; r<brickRowCount; r++) {
+                    var b = bricks[c][r];
+                    if(b.status == 1) {
+                        if(x > b.x && x < b.x+brickWidth && y > b.y && y < b.y+brickHeight) {
+                            dy = -dy;
+                            b.status = 0;
+                            score++;
+                            if(score == brickRowCount*brickColumnCount) {
+                                alert("YOU WIN, CONGRATULATIONS!");
+                                document.location.reload();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function drawScore() {
+
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "#0095DD";
+            ctx.fillText("Score: "+score, 8, 20);
+        }
+
+        function drawPaddle () {
+
+            ctx.beginPath();
+            ctx.rect(paddleX, canvas.height-paddleH, paddleW, paddleH);
+            ctx.fillStyle = "#0095DD";
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawBall() {
+            
+            // código para dibujar
+            ctx.beginPath();
+            // ctx.ellipse(x, y, 50, 75,  Math.PI / 2, 0, 2 * Math.PI);
+            ctx.arc(x, y, ball, 0, 2 * Math.PI);
+            ctx.fillStyle = "#0095DD";
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawLives() {
+
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "#0095DD";
+            ctx.fillText("Lives: "+lives, canvas.width-65, 20);
+        }
+
+        function drawBricks() {
+
+            for(c=0; c<brickColumnCount; c++) {
+                for(r=0; r<brickRowCount; r++) {
+                    if(bricks[c][r].status == 1) {
+                        var brickX = (c*(brickWidth+brickPadding))+brickOffsetLeft;
+                        var brickY = (r*(brickHeight+brickPadding))+brickOffsetTop;
+                        bricks[c][r].x = brickX;
+                        bricks[c][r].y = brickY;
+                        ctx.beginPath();
+                        ctx.rect(brickX, brickY, brickWidth, brickHeight);
+                        ctx.fillStyle = "#0095DD";
+                        ctx.fill();
+                        ctx.closePath();
+                    }
+                }
+            }
+        }
+
+
+        function draw() {
+            
+            //borar cada fotograma
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBall();
+            drawPaddle();
+            drawScore();
+            drawLives();
+            collisionDetection();
+            drawBricks();
+
+           if(x + dx > canvas.width - ball || x + dx < ball) {
+                dx = -dx;
+            }
+            if(y + dy < ball) {
+                dy = -dy;
+            }
+            else if(y + dy > canvas.height - ball) {
+                if(x > paddleX && x < paddleX + paddleW) {
+                    dy = -dy;
+                }
+                else {
+                    lives--;
+                    if(!lives) {
+                        alert("GAME OVER");
+                        document.location.reload();
+                    }
+                    else {
+                        x = canvas.width/2;
+                        y = canvas.height-30;
+                        dx = 2;
+                        dy = -2;
+                        paddleX = (canvas.width-paddleW)/2;
+                    }
+                }
+            }
+
+            if(rightPressed && paddleX < canvas.width - paddleW) {
+                paddleX += 4;
+            }
+            else if(leftPressed && paddleX > 0) {
+                paddleX -= 4;
+            }
+
+            x += dx;
+            y += dy;
+            
+            // Esta es una manera de dar animacion para que sea mas suave, se reemplaza por window 
+            // requestAnimationFrame(draw);
+
+        }
+
+        window.setInterval(draw, 10);
+
+        // se utiliza al utilizar requestAnimationFrame
+        // draw();
+
+    </script>
+    
+</body>
+</html>
